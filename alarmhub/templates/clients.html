@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager with context %}
+{% block content %}
+<div class="head"><h1>Clientes</h1>
+  <div>{% if has('clients.edit') %}<a class="btn primary" href="/clients/new">+ Nuevo cliente</a> <a class="btn" href="/clients-import">Importar CSV</a>{% endif %}</div>
+</div>
+<form class="card filters" method="get">
+  <input name="q" value="{{ q }}" placeholder="Nombre, código, ciudad, teléfono, abonado…">
+  <select name="group"><option value="">Todos los grupos</option>{% for g in groups %}<option {{ 'selected' if g == group }}>{{ g }}</option>{% endfor %}</select>
+  <button class="btn">Buscar</button>
+</form>
+<section class="card">
+<table class="tbl">
+<thead><tr><th>Código</th><th>Nombre</th><th>Grupo</th><th>Tipo</th><th>Población</th><th>Teléfono</th><th>Paneles</th><th>Estado</th></tr></thead>
+<tbody>
+{% for c in items %}<tr>
+<td><a href="/clients/{{ c.id }}">{{ c.code }}</a></td><td><a href="/clients/{{ c.id }}">{{ c.name }}</a></td><td>{{ c.group }}</td><td>{{ c.client_type }}</td>
+<td>{{ c.city }}</td><td>{{ c.phone }}</td><td>{% for p in c.panels %}<a href="/panels/{{ p.id }}" class="tag {{ 'bad' if p.supervision_failed }}">{{ p.account }}</a>{% endfor %}</td>
+<td>{{ '✅' if c.active else '⛔ baja' }}</td></tr>
+{% else %}<tr><td colspan="8" class="muted">Sin clientes</td></tr>{% endfor %}
+</tbody></table></section>
+{{ pager(page, total, 50, '?q=' ~ q ~ '&group=' ~ group ~ '&') }}
+{% endblock %}

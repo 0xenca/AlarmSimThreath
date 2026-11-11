@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import events_table, pager with context %}
+{% block content %}
+<div class="head"><h1>Histórico de señales</h1></div>
+<form class="card filters wrap" method="get">
+  <input name="account" value="{{ params.get('account','') }}" placeholder="Abonado">
+  <input name="code" value="{{ params.get('code','') }}" placeholder="Código (BA, E130…)">
+  <select name="category"><option value="">Categoría</option>{% for k, v in CATEGORIES.items() %}<option value="{{ k }}" {{ 'selected' if params.get('category') == k }}>{{ v }}</option>{% endfor %}</select>
+  <select name="protocol"><option value="">Protocolo</option>{% for p in protocols %}<option {{ 'selected' if params.get('protocol') == p }}>{{ p }}</option>{% endfor %}</select>
+  <label class="small">Desde <input type="datetime-local" name="date_from" value="{{ params.get('date_from','') }}"></label>
+  <label class="small">Hasta <input type="datetime-local" name="date_to" value="{{ params.get('date_to','') }}"></label>
+  <label class="small"><input type="checkbox" name="unknown" value="1" {{ 'checked' if params.get('unknown') }}> Solo desconocidos</label>
+  <button class="btn primary">Buscar</button>
+  {% if has('events.export') %}<a class="btn" href="/events/export.csv?{{ qs }}">⬇ CSV</a>{% endif %}
+</form>
+<section class="card">{{ events_table(items) }}</section>
+{{ pager(page, total, 100, '?' ~ qs ~ '&') }}
+{% endblock %}

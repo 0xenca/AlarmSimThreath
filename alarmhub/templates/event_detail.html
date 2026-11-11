@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cat, prio with context %}
+{% block content %}
+<div class="head"><h1>Señal #{{ e.id }} · {{ e.description }}</h1></div>
+<div class="grid2">
+<section class="card">
+<table class="tbl kv">
+  <tr><th>Recibida</th><td>{{ fmt_dt(e.received_at) }}</td></tr>
+  <tr><th>Hora del panel</th><td>{{ e.panel_timestamp or '—' }}</td></tr>
+  <tr><th>Abonado</th><td>{% if e.panel_id %}<a href="/panels/{{ e.panel_id }}">{{ e.account }}</a>{% else %}{{ e.account }} (desconocido){% endif %} · prefijo L{{ e.line_prefix }} · receptor R{{ e.receiver }}</td></tr>
+  <tr><th>Cliente</th><td>{% if e.client %}<a href="/clients/{{ e.client_id }}">{{ e.client.name }}</a>{% endif %}</td></tr>
+  <tr><th>Código</th><td><code>{{ e.code }}</code> {{ cat(e.category) }} {{ prio(e.priority) }}</td></tr>
+  <tr><th>Zona / partición / usuario</th><td>{{ e.zone or '—' }} / {{ e.partition or '—' }} / {{ e.user or '—' }}</td></tr>
+  <tr><th>Texto</th><td>{{ e.text or '' }}</td></tr>
+  <tr><th>Protocolo</th><td>{{ e.protocol }} ({{ e.transport }}) {% if e.encrypted %}🔒 cifrado AES{% endif %} · secuencia {{ e.sequence }}</td></tr>
+  <tr><th>Origen</th><td>{{ e.remote }}</td></tr>
+  <tr><th>Alarma</th><td>{% if e.alarm_id %}<a href="/alarms/{{ e.alarm_id }}">#{{ e.alarm_id }}</a>{% else %}—{% endif %}</td></tr>
+  <tr><th>Datos extra</th><td><code>{{ e.extra|tojson }}</code></td></tr>
+  <tr><th>Trama</th><td><code class="raw">{{ e.raw }}</code></td></tr>
+</table>
+</section>
+<section class="card">
+  <h2>Comentarios</h2>
+  <ul class="timeline">{% for c in comments %}<li><small>{{ fmt_dt(c.created_at) }} · {{ c.user.username if c.user else 'sistema' }}</small><br>{{ c.text }}</li>{% else %}<li class="muted">Sin comentarios</li>{% endfor %}</ul>
+  <form method="post" action="/events/{{ e.id }}/comment"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <textarea name="text" rows="2" required></textarea><button class="btn">Añadir</button></form>
+  {% if runs %}<h3>Workflows disparados</h3><ul>{% for r in runs %}<li><a href="/workflow-runs/{{ r.id }}">#{{ r.id }} {{ r.workflow.name if r.workflow else '' }}</a> – {{ r.status }}</li>{% endfor %}</ul>{% endif %}
+</section>
+</div>
+{% endblock %}

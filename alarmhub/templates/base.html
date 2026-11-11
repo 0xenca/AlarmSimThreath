@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_name }}{% endblock %} · AlarmHub</title>
+<link rel="stylesheet" href="/static/app.css?v={{ version }}">
+<meta name="csrf" content="{{ csrf }}">
+</head>
+<body data-sound="{{ '1' if sound_alerts else '0' }}">
+{% if user %}
+<aside class="sidebar">
+  <div class="brand"><span class="dot" id="live-dot" title="Tiempo real"></span> {{ site_name }}</div>
+  <nav>
+    <a href="/" class="{{ 'active' if request.url.path == '/' }}">📊 Panel</a>
+    {% if has('alarms.view') %}<a href="/alarms" class="{{ 'active' if request.url.path.startswith('/alarms') }}">🚨 Alarmas <span class="badge" id="nav-open"></span></a>{% endif %}
+    {% if has('events.view') %}<a href="/events" class="{{ 'active' if request.url.path.startswith('/events') }}">📜 Señales</a>{% endif %}
+    {% if has('clients.view') %}
+      <div class="nav-title">Abonados</div>
+      <a href="/clients" class="{{ 'active' if request.url.path.startswith('/clients') }}">👥 Clientes</a>
+      <a href="/panels" class="{{ 'active' if request.url.path.startswith('/panels') }}">📟 Paneles</a>
+      <a href="/unknown" class="{{ 'active' if request.url.path.startswith('/unknown') }}">❓ Desconocidos</a>
+    {% endif %}
+    {% if has('workflows.view') %}
+      <div class="nav-title">Automatización</div>
+      <a href="/workflows" class="{{ 'active' if request.url.path.startswith('/workflow') }}">⚙️ Workflows</a>
+    {% endif %}
+    {% if has('users.manage') or has('settings.manage') or has('audit.view') %}<div class="nav-title">Sistema</div>{% endif %}
+    {% if has('users.manage') %}<a href="/users" class="{{ 'active' if request.url.path.startswith('/users') }}">🔑 Usuarios</a>
+    <a href="/roles" class="{{ 'active' if request.url.path.startswith('/roles') }}">🛡️ Perfiles</a>{% endif %}
+    {% if has('settings.manage') %}<a href="/settings" class="{{ 'active' if request.url.path.startswith('/settings') }}">🔧 Configuración</a>{% endif %}
+    {% if has('audit.view') %}<a href="/audit">🧾 Auditoría</a><a href="/notifications">✉️ Notificaciones</a>{% endif %}
+    <a href="/api/docs" target="_blank">🔌 API</a>
+  </nav>
+  <div class="me">
+    <a href="/profile">{{ user.full_name or user.username }}</a><br>
+    <small>{{ user.role.name if user.role else 'sin perfil' }}</small> · <a href="/logout">Salir</a>
+    <div><label class="small"><input type="checkbox" id="sound-toggle"> Sonido</label></div>
+  </div>
+</aside>
+{% endif %}
+<main class="{{ 'with-sidebar' if user else 'center' }}">
+  {% for level, msg in flashes %}<div class="flash {{ level }}">{{ msg }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<div id="toasts"></div>
+<script src="/static/app.js?v={{ version }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

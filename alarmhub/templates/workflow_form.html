@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head"><h1>{{ 'Workflow: ' ~ wf.name if wf else 'Nuevo workflow' }}</h1>
+{% if wf and has('workflows.edit') %}<div>
+<form method="post" action="/workflows/{{ wf.id }}/duplicate" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">Duplicar</button></form>
+<form method="post" action="/workflows/{{ wf.id }}/delete" class="inline" onsubmit="return confirm('¿Eliminar workflow?')"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn danger">Eliminar</button></form></div>{% endif %}</div>
+<div class="grid2 wf">
+<form method="post" action="/workflows/save" class="card" id="wf-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="id" value="{{ wf.id if wf else '' }}">
+  <div class="form-grid">
+    <label>Nombre<input name="name" required value="{{ wf.name if wf else '' }}"></label>
+    <label>Orden<input name="order" type="number" value="{{ wf.order if wf else 100 }}"></label>
+    <label class="full">Descripción<input name="description" value="{{ wf.description if wf else '' }}"></label>
+    <label><input type="checkbox" name="enabled" {{ 'checked' if wf and wf.enabled }}> Activo</label>
+    <label><input type="checkbox" name="stop_processing" {{ 'checked' if wf and wf.stop_processing }}> Si coincide, no evaluar workflows posteriores</label>
+  </div>
+  <label>Definición (JSON)</label>
+  <textarea name="definition" id="definition" rows="28" class="mono" spellcheck="false">{{ definition }}</textarea>
+  <div id="json-status" class="small"></div>
+  {% if has('workflows.edit') %}<button class="btn primary">Guardar</button>{% endif %}
+  <button type="button" class="btn" onclick="AH.formatJSON('definition')">Formatear JSON</button>
+  <h3>Probar disparador</h3>
+  <p class="small muted">Contexto de evento de ejemplo (no se ejecuta ninguna acción):</p>
+  <textarea id="sample" rows="5" class="mono">{"category": "alarm", "code": "BA", "account": "1234", "zone": "3", "partition": "1", "priority": 2, "client_group": "", "armed_state": "armado"}</textarea>
+  <button type="button" class="btn" onclick="AH.testTrigger()">Comprobar</button> <span id="test-result"></span>
+</form>
+<section class="card help">
+  <h2>Ayuda</h2>
+  <p>Estructura: <code>{"trigger": {...}, "hold_alarm": false, "steps": [...]}</code>.
+  Con <code>hold_alarm: true</code> la alarma nace <b>en buffer</b> (no la ve el operador) hasta que un paso la libera o la cierra.
+  Si el workflow termina sin decidir, la alarma se libera automáticamente (fail-safe).</p>
+  <h3>Condiciones del disparador</h3>
+  <table class="tbl compact">{% for k, v in trigger_docs.items() %}<tr><td><code>{{ k }}</code></td><td>{{ v }}</td></tr>{% endfor %}</table>
+  <h3>Pasos</h3>
+  {% for k, d in step_docs.items() %}
+  <details><summary><code>{{ k }}</code> – {{ d.desc }}</summary>
+  <pre class="mono small">{{ d.example|tojson(indent=2) }}</pre>
+  <button type="button" class="btn small" onclick='AH.insertStep({{ d.example|tojson }})'>Añadir al final</button></details>
+  {% endfor %}
+  <h3>Variables para plantillas</h3>
+  <p class="small">{% for p in placeholders %}<code>{{ '{' ~ p ~ '}' }}</code> {% endfor %}</p>
+</section>
+</div>
+{% if runs %}<section class="card"><h2>Ejecuciones</h2>
+<table class="tbl compact">{% for r in runs %}<tr><td><a href="/workflow-runs/{{ r.id }}">#{{ r.id }}</a></td><td>{{ fmt_dt(r.started_at) }}</td><td class="run-{{ r.status }}">{{ r.status }}</td>
+<td>{% if r.alarm_id %}<a href="/alarms/{{ r.alarm_id }}">alarma #{{ r.alarm_id }}</a>{% endif %}</td><td><small>{{ (r.log or [''])[-1] }}</small></td></tr>{% endfor %}</table></section>{% endif %}
+{% endblock %}

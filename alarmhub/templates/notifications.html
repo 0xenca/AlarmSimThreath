@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager with context %}
+{% block content %}
+<h1>Notificaciones enviadas</h1>
+<section class="card"><table class="tbl compact">
+<thead><tr><th>Fecha</th><th>Canal</th><th>Destino</th><th>Asunto</th><th>Estado</th><th>Alarma</th><th>Error</th></tr></thead>
+{% for n in items %}<tr><td class="nowrap">{{ fmt_dt(n.created_at) }}</td><td>{{ n.channel }}</td><td>{{ n.target }}</td><td>{{ n.subject }}</td>
+<td>{{ '✅' if n.status == 'ok' else '❌' }}</td><td>{% if n.alarm_id %}<a href="/alarms/{{ n.alarm_id }}">#{{ n.alarm_id }}</a>{% endif %}</td><td><small>{{ n.error[:200] }}</small></td></tr>{% endfor %}
+</table></section>
+{{ pager(page, total, 100, '?') }}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ 'Usuario ' ~ u.username if u else 'Nuevo usuario' }}</h1>
+<form method="post" action="/users/save" class="card form-grid">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ u.id if u else '' }}">
+  <label>Usuario<input name="username" required value="{{ u.username if u else '' }}"></label>
+  <label>Nombre completo<input name="full_name" value="{{ u.full_name if u else '' }}"></label>
+  <label>Email<input name="email" type="email" value="{{ u.email if u else '' }}"></label>
+  <label>Teléfono<input name="phone" value="{{ u.phone if u else '' }}"></label>
+  <label>Perfil<select name="role_id"><option value="">—</option>{% for r in roles %}<option value="{{ r.id }}" {{ 'selected' if u and u.role_id == r.id }}>{{ r.name }}</option>{% endfor %}</select></label>
+  <label>Grupos de clientes visibles <small>(separados por comas; vacío = todos)</small><input name="client_groups" value="{{ (u.client_groups or [])|join(', ') if u else '' }}"></label>
+  <label>{{ 'Nueva contraseña (vacío = no cambiar)' if u else 'Contraseña *' }}<input type="password" name="password" autocomplete="new-password"></label>
+  <label><input type="checkbox" name="must_change_password" {{ 'checked' if not u }}> Obligar a cambiarla en el próximo acceso</label>
+  <label><input type="checkbox" name="active" {{ 'checked' if not u or u.active }}> Activo</label>
+  <div class="full">
+    <h3>Acceso API</h3>
+    {% if u and u.api_key %}<p><code class="secret">{{ u.api_key }}</code></p>
+      <label><input type="checkbox" name="revoke_api_key"> Revocar API key</label>{% endif %}
+    <label><input type="checkbox" name="regen_api_key"> Generar {{ 'nueva ' if u and u.api_key }}API key</label>
+    <p class="small muted">Uso: cabecera <code>X-API-Key</code> en <code>/api/v1/*</code>. Los permisos los determina el perfil.</p>
+  </div>
+  <div class="full"><button class="btn primary">Guardar</button> <a href="/users">Volver</a></div>
+</form>
+{% endblock %}

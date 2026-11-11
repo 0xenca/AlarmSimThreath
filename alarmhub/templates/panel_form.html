@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="head"><h1>{{ 'Editar panel ' ~ p.account if p else 'Nuevo panel' }}</h1></div>
+<form method="post" class="card form-grid">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Cliente<select name="client_id"><option value="">— sin asignar —</option>{% for c in clients %}<option value="{{ c.id }}" {{ 'selected' if c.id == client_id }}>{{ c.name }} ({{ c.code }})</option>{% endfor %}</select></label>
+  <label>Nombre / ubicación del equipo<input name="name" value="{{ p.name if p else '' }}" placeholder="Central principal"></label>
+  <label>Nº abonado (#acct) *<input name="account" required value="{{ account }}" pattern="[0-9A-Fa-f]{1,16}"></label>
+  <label>Prefijo de línea (L) <small>vacío = cualquiera</small><input name="line_prefix" value="{{ p.line_prefix if p else '' }}"></label>
+  <label>Protocolo<select name="protocol">{% for x in ['SIA-DCS','ADM-CID','SURGARD','HTTP','OTRO'] %}<option {{ 'selected' if p and p.protocol == x }}>{{ x }}</option>{% endfor %}</select></label>
+  <label>Fabricante<input name="manufacturer" value="{{ p.manufacturer if p else '' }}" placeholder="Ajax, Paradox, DSC, Hikvision…"></label>
+  <label>Modelo<input name="model" value="{{ p.model if p else '' }}"></label>
+  <label>Nº de serie<input name="serial" value="{{ p.serial if p else '' }}"></label>
+  <label>Instalador<input name="installer" value="{{ p.installer if p else '' }}"></label>
+  <label>Ubicación<input name="location" value="{{ p.location if p else '' }}"></label>
+  <label>Latitud<input name="latitude" value="{{ p.latitude if p and p.latitude is not none else '' }}"></label>
+  <label>Longitud<input name="longitude" value="{{ p.longitude if p and p.longitude is not none else '' }}"></label>
+  {% if has('clients.secrets') %}
+  <label>Clave AES DC-09 <small>(128/192/256 bits; vacío = sin cifrado)</small><input name="enc_key" value="{{ p.enc_key if p else '' }}" autocomplete="off" class="mono"></label>
+  <label>Formato de la clave<select name="key_format"><option value="hex" {{ 'selected' if not p or p.key_format == 'hex' }}>Hexadecimal (32/48/64 caracteres)</option><option value="ascii" {{ 'selected' if p and p.key_format == 'ascii' }}>ASCII (16/24/32 caracteres)</option></select></label>
+  {% endif %}
+  <label><input type="checkbox" name="require_encryption" {{ 'checked' if p and p.require_encryption }}> Rechazar mensajes sin cifrar (NAK)</label>
+  <label>Supervisión (minutos sin comunicar → alarma; 0 = desactivada)<input type="number" min="0" name="supervision_minutes" value="{{ p.supervision_minutes if p else 0 }}"></label>
+  <label class="full">Notas<textarea name="notes" rows="3">{{ p.notes if p else '' }}</textarea></label>
+  <label><input type="checkbox" name="active" {{ 'checked' if not p or p.active }}> Activo</label>
+  <div class="full"><button class="btn primary">Guardar</button> <a href="{{ '/panels/' ~ p.id if p else '/panels' }}">Cancelar</a></div>
+</form>
+{% endblock %}

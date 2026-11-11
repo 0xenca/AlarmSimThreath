@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import events_table, status, prio with context %}
+{% block content %}
+<div class="head"><h1>{{ c.name }} <small class="muted">{{ c.code }}</small> {% if not c.active %}<span class="tag bad">baja</span>{% endif %}</h1>
+<div>{% if has('clients.edit') %}<a class="btn" href="/clients/{{ c.id }}/edit">Editar</a>
+<a class="btn primary" href="/panels/new?client_id={{ c.id }}">+ Panel</a>
+<form method="post" action="/clients/{{ c.id }}/delete" class="inline" onsubmit="return confirm('¿Eliminar cliente? Los paneles y señales se conservan sin asignar.')"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn danger">Eliminar</button></form>{% endif %}</div></div>
+<div class="grid2">
+<section class="card">
+  <h2>Datos</h2>
+  <table class="tbl kv">
+    <tr><th>Tipo / grupo</th><td>{{ c.client_type }} {% if c.group %}· {{ c.group }}{% endif %}</td></tr>
+    <tr><th>NIF/CIF</th><td>{{ c.tax_id }}</td></tr>
+    <tr><th>Contrato</th><td>{{ c.contract_number }}</td></tr>
+    <tr><th>Dirección</th><td>{{ c.address }}, {{ c.postal_code }} {{ c.city }} ({{ c.province }}) {{ c.country }}</td></tr>
+    <tr><th>Teléfono / email</th><td>{{ c.phone }} · {{ c.email }}</td></tr>
+    {% if has('clients.secrets') %}<tr><th>Palabra clave</th><td class="secret">{{ c.keyword or '—' }} · coacción: {{ c.duress_keyword or '—' }}</td></tr>{% endif %}
+    <tr><th>Instrucciones</th><td class="pre">{{ c.instructions }}</td></tr>
+    <tr><th>Notas</th><td class="pre">{{ c.notes }}</td></tr>
+    <tr><th>Alta</th><td>{{ fmt_dt(c.created_at) }}</td></tr>
+  </table>
+  <h2>Paneles</h2>
+  <table class="tbl compact">
+  {% for p in c.panels %}<tr><td><a href="/panels/{{ p.id }}">{{ p.account }}</a>{% if p.line_prefix %} L{{ p.line_prefix }}{% endif %}</td><td>{{ p.name }}</td><td>{{ p.manufacturer }} {{ p.model }}</td>
+  <td>{{ '🔒' if p.enc_key }}</td><td>{{ fmt_dt(p.last_seen) or 'nunca' }}</td><td>{% if p.supervision_failed %}<span class="tag bad">sin comunicación</span>{% elif p.in_test %}<span class="tag">prueba</span>{% else %}<span class="tag ok">{{ p.armed_state }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td class="muted">Sin paneles asociados</td></tr>{% endfor %}
+  </table>
+</section>
+<section class="card" id="contacts">
+  <h2>Contactos</h2>
+  <table class="tbl compact">
+    <thead><tr><th>#</th><th>Nombre</th><th>Relación</th><th>Teléfonos</th><th>Email</th><th></th></tr></thead>
+    {% for ct in c.contacts %}
+    <tr><td>{{ ct.priority }}</td><td>{{ ct.name }}{% if ct.has_keys %} 🔑{% endif %}</td><td>{{ ct.relation }}</td><td>{{ ct.phone }} {{ ct.phone2 }}</td><td>{{ ct.email }}{% if ct.notify_email %} 📧{% endif %}</td>
+    <td>{% if has('clients.edit') %}<details><summary>Editar</summary>
+      <form method="post" action="/clients/{{ c.id }}/contacts" class="mini-form"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="contact_id" value="{{ ct.id }}">
+      <input name="name" value="{{ ct.name }}" placeholder="Nombre"><input name="relation" value="{{ ct.relation }}" placeholder="Relación">
+      <input name="phone" value="{{ ct.phone }}" placeholder="Teléfono"><input name="phone2" value="{{ ct.phone2 }}" placeholder="Teléfono 2">
+      <input name="email" value="{{ ct.email }}" placeholder="Email"><input name="priority" type="number" value="{{ ct.priority }}" min="1">
+      <input name="notes" value="{{ ct.notes }}" placeholder="Notas">
+      <label><input type="checkbox" name="has_keys" {{ 'checked' if ct.has_keys }}> Tiene llaves</label>
+      <label><input type="checkbox" name="notify_email" {{ 'checked' if ct.notify_email }}> Avisos por email</label>
+      <button class="btn small">Guardar</button> <button class="btn small danger" name="delete" value="1">Borrar</button></form></details>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  {% if has('clients.edit') %}
+  <details><summary class="btn small">+ Añadir contacto</summary>
+  <form method="post" action="/clients/{{ c.id }}/contacts" class="mini-form"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <input name="name" placeholder="Nombre *" required><input name="relation" placeholder="Relación (titular, vecino…)">
+    <input name="phone" placeholder="Teléfono"><input name="phone2" placeholder="Teléfono 2"><input name="email" placeholder="Email">
+    <input name="priority" type="number" value="{{ c.contacts|length + 1 }}" min="1"><input name="notes" placeholder="Notas">
+    <label><input type="checkbox" name="has_keys"> Tiene llaves</label><label><input type="checkbox" name="notify_email"> Avisos por email</label>
+    <button class="btn small primary">Añadir</button></form></details>
+  {% endif %}
+  <h2 id="notes">Notas del cliente</h2>
+  <form method="post" action="/clients/{{ c.id }}/comment"><input type="hidden" name="csrf" value="{{ csrf }}"><textarea name="text" rows="2" required></textarea><button class="btn small">Añadir nota</button></form>
+  <ul class="timeline">{% for cm in comments %}<li><small>{{ fmt_dt(cm.created_at) }} · {{ cm.user.username if cm.user else 'sistema' }}</small><br>{{ cm.text }}</li>{% endfor %}</ul>
+</section>
+</div>
+<section class="card"><h2>Alarmas</h2>
+<table class="tbl compact">{% for a in alarms %}<tr><td>{{ prio(a.priority) }}</td><td><a href="/alarms/{{ a.id }}">#{{ a.id }}</a></td><td>{{ fmt_dt(a.opened_at) }}</td><td>{{ a.title }}</td><td>{{ status(a.status) }}</td><td>{{ RESOLUTIONS.get(a.resolution, '') }}</td></tr>{% else %}<tr><td class="muted">Sin alarmas</td></tr>{% endfor %}</table>
+</section>
+<section class="card"><h2>Últimas señales</h2>{{ events_table(events, False) }}<a href="/events?client_id={{ c.id }}">Ver todas →</a></section>
+{% endblock %}

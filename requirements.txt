@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sqlalchemy>=2.0
+jinja2>=3.1
+python-multipart>=0.0.9
+cryptography>=42
+httpx>=0.27
+itsdangerous>=2.1
+# Opcional para PostgreSQL:  psycopg[binary]>=3.1

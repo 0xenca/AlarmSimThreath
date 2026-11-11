@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager with context %}
+{% block content %}
+<h1>Registro de auditoría</h1>
+<section class="card"><table class="tbl compact">
+<thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Objeto</th><th>Detalle</th><th>IP</th></tr></thead>
+{% for a in items %}<tr><td class="nowrap">{{ fmt_dt(a.created_at) }}</td><td>{{ a.username }}</td><td>{{ a.action }}</td><td>{{ a.object_type }} {{ a.object_id }}</td><td><small>{{ a.details[:200] }}</small></td><td>{{ a.ip }}</td></tr>{% endfor %}
+</table></section>
+{{ pager(page, total, 100, '?') }}
+{% endblock %}
