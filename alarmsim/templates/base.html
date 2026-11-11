@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AlarmSim{% endblock %} · Generador SIA DC-09</title>
+<link rel="stylesheet" href="/static/app.css?v={{ version }}">
+<meta name="csrf" content="{{ csrf }}">
+</head>
+<body>
+{% if user or not auth %}
+<header class="top">
+  <a class="brand" href="/">📡 AlarmSim <small>SIA DC-09</small></a>
+  <nav>
+    {% set p = request.url.path %}
+    <a href="/" class="{{ 'on' if p == '/' }}">Generador</a>
+    <a href="/scenarios" class="{{ 'on' if p.startswith('/scenarios') }}">Escenarios</a>
+    <a href="/history" class="{{ 'on' if p.startswith('/history') }}">Histórico</a>
+    <a href="/panels" class="{{ 'on' if p.startswith('/panels') }}">Paneles</a>
+    <a href="/targets" class="{{ 'on' if p.startswith('/targets') }}">Receptoras</a>
+    <a href="/load" class="{{ 'on' if p.startswith('/load') }}">Carga</a>
+    <a href="/raw" class="{{ 'on' if p.startswith('/raw') }}">Trama manual</a>
+    <a href="/receiver" class="{{ 'on' if p.startswith('/receiver') }}">Receptor de pruebas</a>
+  </nav>
+  <div class="me"><span class="dot" id="live-dot" title="Tiempo real"></span>
+    {% if user %}<a href="/account">{{ user.username }}</a> · <a href="/logout">Salir</a>{% endif %}
+    · <a href="/api/docs" target="_blank">API</a></div>
+</header>
+{% endif %}
+<main class="{{ 'center' if not (user or not auth) }}">
+  {% for level, msg in flashes %}<div class="flash {{ level }}">{{ msg }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<div id="toasts"></div>
+<script src="/static/app.js?v={{ version }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

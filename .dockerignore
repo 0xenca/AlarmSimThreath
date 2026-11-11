@@ -1,0 +1,5 @@
+.git
+.venv
+data
+alarmsim.env
+__pycache__

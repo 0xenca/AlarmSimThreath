@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Panel{% endblock %}
+{% block content %}
+<div class="head"><h1>{{ 'Panel ' ~ p.account if p else 'Nuevo panel' }}</h1>{% if p %}<a class="btn primary" href="/?panel={{ p.id }}">Ir al generador</a>{% endif %}</div>
+<form method="post" action="/panels/save" class="card grid-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ p.id if p else '' }}">
+  <label>Nº abonado (<code>#acct</code>, 3-16 hex)<input name="account" required value="{{ p.account if p else '' }}" pattern="[0-9A-Fa-f]{3,16}"></label>
+  <label>Nombre<input name="name" value="{{ p.name if p else '' }}"></label>
+  <label>Receptora destino<select name="target_id"><option value="">—</option>{% for t in targets %}<option value="{{ t.id }}" {{ 'selected' if p and p.target_id == t.id }}>{{ t.label }}</option>{% endfor %}</select></label>
+  <label>Protocolo por defecto<select name="protocol"><option>SIA-DCS</option><option {{ 'selected' if p and p.protocol == 'ADM-CID' }}>ADM-CID</option></select></label>
+  <label>Nº receptor <code>R</code> <small>(vacío = el del destino, "-" = omitir)</small><input name="receiver" value="{{ p.receiver if p else '' }}"></label>
+  <label>Prefijo <code>L</code> <small>(vacío = el del destino)</small><input name="line" value="{{ p.line if p else '' }}"></label>
+  <label>Cifrado<select name="encryption">{% for k, v in [('auto','Automático (si hay clave)'),('on','Siempre cifrado'),('off','Siempre en claro')] %}<option value="{{ k }}" {{ 'selected' if p and p.encryption == k }}>{{ v }}</option>{% endfor %}</select></label>
+  <label>Clave AES propia <small>(vacío = la del destino)</small><input name="enc_key" class="mono" value="{{ p.enc_key if p else '' }}" autocomplete="off"></label>
+  <label>Formato clave<select name="key_format"><option value="hex">Hexadecimal</option><option value="ascii" {{ 'selected' if p and p.key_format == 'ascii' }}>ASCII</option></select></label>
+  <label>Último nº de secuencia<input name="sequence" type="number" min="0" max="9999" value="{{ p.sequence if p else 0 }}"></label>
+  <h3 class="full">Envíos periódicos automáticos</h3>
+  <label class="inline-check"><input type="checkbox" name="schedules_enabled" {{ 'checked' if p and p.schedules_enabled }}> Activar</label>
+  <label>Prueba de enlace NULL cada (s, 0 = no)<input name="null_interval" type="number" min="0" value="{{ p.null_interval if p else 0 }}"></label>
+  <label>Test periódico RP / 602 cada (s, 0 = no)<input name="test_interval" type="number" min="0" value="{{ p.test_interval if p else 0 }}"></label>
+  <h3 class="full">Datos extendidos fijos del panel (se añaden a cada alarma)</h3>
+  {% for k in ['S','O','L','X','Y','Z','M','N','C','J'] %}{% set f = xfields[k] %}
+  <label><code>[{{ k }}]</code> {{ f.name }}<input name="x_{{ k }}" maxlength="{{ f.max_len }}" placeholder="{{ f.placeholder }}" value="{{ (p.xdata_defaults or {}).get(k, '') if p else '' }}"></label>{% endfor %}
+  <label class="full">Notas<textarea name="notes" rows="2">{{ p.notes if p else '' }}</textarea></label>
+  {% if not p %}<label class="inline-check full"><input type="checkbox" name="create_defaults" checked> Crear zonas, partición y usuario de ejemplo</label>{% endif %}
+  <div class="full"><button class="btn primary">Guardar</button>{% if p %} <button class="btn danger" name="delete" value="1" onclick="return confirm('¿Eliminar panel?')">Eliminar</button>{% endif %}</div>
+</form>
+{% if p %}
+<div class="grid3">
+<section class="card" id="zones"><h2>Zonas</h2>
+<table class="tbl compact"><thead><tr><th>Nº</th><th>Nombre</th><th>Part.</th><th>SIA</th><th>CID</th><th>Sala [R]</th><th></th></tr></thead>
+{% for z in p.zones %}<tr><td>{{ z.number }}</td><td>{{ z.name }}</td><td>{{ z.partition }}</td><td>{{ z.alarm_code }}</td><td>{{ z.cid_code }}</td><td>{{ z.room }}</td>
+<td><form method="post" action="/panels/{{ p.id }}/items" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="zone"><button class="btn small danger" name="delete_id" value="{{ z.id }}">✕</button></form></td></tr>{% endfor %}</table>
+<form method="post" action="/panels/{{ p.id }}/items" class="mini"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="zone">
+  <input name="number" type="number" placeholder="Nº" required style="width:60px"><input name="name" placeholder="Nombre"><input name="partition" placeholder="Part." value="1" style="width:50px">
+  <select name="alarm_code">{% for c in ['BA','FA','PA','HA','MA','TA','WA','GA','KA','ZA','UA'] %}<option>{{ c }}</option>{% endfor %}</select>
+  <input name="cid_code" value="130" style="width:55px"><input name="room" placeholder="Sala"><button class="btn small">+ Zona</button></form>
+<form method="post" action="/panels/{{ p.id }}/items" class="mini"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="zone">
+  Alta masiva: <input name="bulk" placeholder="1-16,20"> part. <input name="partition" value="1" style="width:50px"><button class="btn small">Crear</button></form>
+</section>
+<section class="card" id="partitions"><h2>Particiones / áreas</h2>
+<table class="tbl compact">{% for x in p.partitions %}<tr><td>{{ x.number }}</td><td>{{ x.name }}</td><td><form method="post" action="/panels/{{ p.id }}/items" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="partition"><button class="btn small danger" name="delete_id" value="{{ x.id }}">✕</button></form></td></tr>{% endfor %}</table>
+<form method="post" action="/panels/{{ p.id }}/items" class="mini"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="partition">
+<input name="number" type="number" placeholder="Nº" required style="width:60px"><input name="name" placeholder="Nombre"><button class="btn small">+ Partición</button></form>
+</section>
+<section class="card" id="users"><h2>Usuarios</h2>
+<table class="tbl compact">{% for x in p.users %}<tr><td>{{ x.number }}</td><td>{{ x.name }}</td><td><form method="post" action="/panels/{{ p.id }}/items" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="user"><button class="btn small danger" name="delete_id" value="{{ x.id }}">✕</button></form></td></tr>{% endfor %}</table>
+<form method="post" action="/panels/{{ p.id }}/items" class="mini"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="user">
+<input name="number" type="number" placeholder="Nº" required style="width:60px"><input name="name" placeholder="Nombre"><button class="btn small">+ Usuario</button></form>
+</section>
+</div>
+{% endif %}
+{% endblock %}

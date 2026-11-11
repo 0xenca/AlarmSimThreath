@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Histórico{% endblock %}
+{% block content %}
+<div class="head"><h1>Histórico de envíos</h1>
+<div><a class="btn" href="/history.csv">⬇ CSV</a>
+<form method="post" action="/history/clear" class="inline" onsubmit="return confirm('¿Vaciar histórico?')"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn danger">Vaciar</button></form></div></div>
+<form class="card filters"><input name="account" value="{{ account }}" placeholder="Abonado">
+  <select name="result"><option value="">Resultado</option>{% for r in ['ACK','NAK','DUH','TIMEOUT','ERROR','RESPUESTA?','SENT'] %}<option {{ 'selected' if r == result }}>{{ r }}</option>{% endfor %}</select>
+  <select name="source"><option value="">Origen</option>{% for r in ['manual','escenario','null','test','api','manual-raw'] %}<option {{ 'selected' if r == source }}>{{ r }}</option>{% endfor %}</select>
+  <button class="btn">Filtrar</button></form>
+<section class="card">
+<table class="tbl compact">
+<thead><tr><th>#</th><th>Fecha (UTC)</th><th>Origen</th><th>Abonado</th><th>Seq</th><th>Evento</th><th></th><th>Resultado</th><th>ms</th><th>Destino</th></tr></thead>
+<tbody>
+{% for m in items %}
+<tr class="clickable" onclick="AH.showMessage({{ m.id }})"><td>{{ m.id }}</td><td class="nowrap">{{ m.created_at.strftime('%d/%m %H:%M:%S') }}</td><td>{{ m.source }}</td><td>{{ m.account }}</td><td>{{ m.sequence }}</td>
+<td>{{ m.summary }}</td><td>{{ '🔒' if m.encrypted }}</td><td><span class="res res-{{ m.result|replace('?','') }}">{{ m.result }}</span> {% if m.error %}<small class="muted">{{ m.error[:60] }}</small>{% endif %}</td>
+<td>{{ m.latency_ms if m.latency_ms is not none else '' }}</td><td class="small">{{ m.target }}</td></tr>
+{% else %}<tr><td colspan="10" class="muted">Sin envíos</td></tr>{% endfor %}
+</tbody></table></section>
+{% set pages = (total + 99) // 100 %}
+<div class="pager">{% if page > 1 %}<a href="?page={{ page-1 }}&account={{ account }}&result={{ result }}&source={{ source }}">«</a>{% endif %} Página {{ page }} / {{ pages or 1 }} · {{ total }} {% if page < pages %}<a href="?page={{ page+1 }}&account={{ account }}&result={{ result }}&source={{ source }}">»</a>{% endif %}</div>
+<dialog id="msg-dlg"><pre id="msg-body" class="frame"></pre><button class="btn" onclick="this.closest('dialog').close()">Cerrar</button></dialog>
+{% endblock %}

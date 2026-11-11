@@ -1,13 +1,13 @@
 services:
-  alarmhub:
+  alarmsim:
     build: .
     restart: unless-stopped
-    env_file: alarmhub.env
+    env_file: alarmsim.env
     environment:
-      DATABASE_URL: sqlite:////app/data/alarmhub.db
+      DATABASE_URL: sqlite:////app/data/alarmsim.db
     ports:
       - "8080:8080"
-      - "7000:7000/tcp"
-      - "7000:7000/udp"
+      - "7100:7100/tcp"
+      - "7100:7100/udp"
     volumes:
       - ./data:/app/data

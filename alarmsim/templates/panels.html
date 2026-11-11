@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Paneles{% endblock %}
+{% block content %}
+<div class="head"><h1>Paneles simulados</h1><a class="btn primary" href="/panels/new">+ Nuevo panel</a></div>
+<section class="card"><table class="tbl">
+<thead><tr><th>Abonado</th><th>Nombre</th><th>Protocolo</th><th>Destino</th><th>Cifrado</th><th>Zonas / part. / usuarios</th><th>Secuencia</th><th>Periódicos</th><th></th></tr></thead>
+{% for p in items %}<tr><td><a href="/panels/{{ p.id }}"><b>{{ p.account }}</b></a></td><td>{{ p.name }}</td><td>{{ p.protocol }}</td><td>{{ p.target.label if p.target else '—' }}</td>
+<td>{{ p.encryption }}{{ ' 🔒' if p.enc_key or (p.target and p.target.enc_key) }}</td><td>{{ p.zones|length }} / {{ p.partitions|length }} / {{ p.users|length }}</td><td>{{ '%04d'|format(p.sequence) }}</td>
+<td class="small">{% if p.schedules_enabled %}{{ ('NULL ' ~ p.null_interval ~ 's') if p.null_interval }} {{ ('test ' ~ p.test_interval ~ 's') if p.test_interval }}{% else %}—{% endif %}</td>
+<td><a class="btn small" href="/?panel={{ p.id }}">Generar</a></td></tr>
+{% else %}<tr><td colspan="9" class="muted">Sin paneles</td></tr>{% endfor %}
+</table></section>
+{% endblock %}

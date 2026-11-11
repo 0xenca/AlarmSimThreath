@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Generador{% endblock %}
+{% block content %}
+{% if not panels %}
+<div class="card"><h2>Empiece por configurar</h2><p>1. <a href="/targets">Cree una receptora destino</a> &nbsp; 2. <a href="/panels/new">Cree un panel</a></p></div>
+{% else %}
+<div class="gen">
+<!-- ===================== COLUMNA 1: evento ===================== -->
+<section class="card">
+  <h2>1 · Panel y evento</h2>
+  <label>Panel / abonado
+    <select id="panel">{% for p in panels %}<option value="{{ p.id }}" {{ 'selected' if p.id == selected }}>{{ p.label }} → {{ p.target.name if p.target else 'SIN DESTINO' }}</option>{% endfor %}</select>
+  </label>
+  <div id="panel-info" class="small muted"></div>
+
+  <div class="seg" id="token-seg">
+    <label><input type="radio" name="token" value="SIA-DCS" checked> SIA-DCS</label>
+    <label><input type="radio" name="token" value="ADM-CID"> ADM-CID (Contact ID)</label>
+    <label><input type="radio" name="token" value="NULL"> NULL (enlace)</label>
+  </div>
+
+  <div id="event-fields">
+    <div class="row2">
+      <label>Código <input id="code" list="codes-list" value="BA" autocomplete="off"></label>
+      <label class="cid-only">Calificador
+        <select id="qualifier"><option value="E">E · 1 nuevo / apertura</option><option value="R">R · 3 restauración / cierre</option><option value="P">P · 6 estado</option></select></label>
+    </div>
+    <datalist id="codes-list"></datalist>
+    <div id="code-desc" class="small muted"></div>
+    <div class="row3">
+      <label>Zona <input id="zone" list="zones-list" placeholder="nº zona"></label>
+      <label>Partición <input id="partition" list="parts-list" placeholder="ri / GG"></label>
+      <label>Usuario <input id="user" list="users-list" placeholder="id"></label>
+    </div>
+    <datalist id="zones-list"></datalist><datalist id="parts-list"></datalist><datalist id="users-list"></datalist>
+
+    <div class="sia-only">
+      <div class="row2">
+        <label>Hora SIA (<code>ti</code>)
+          <select id="ti-mode"><option value="">No incluir</option><option value="auto">Hora actual</option><option value="manual">Manual…</option></select></label>
+        <label id="ti-manual-wrap" hidden>HH:MM <input id="ti" placeholder="10:05"></label>
+      </div>
+      <label>Texto SIA en línea (<code>^texto^</code>, compatibilidad)<input id="inline_text" maxlength="64"></label>
+      <h3>Eventos adicionales en el mismo mensaje</h3>
+      <table class="tbl compact" id="extra-table"><tbody></tbody></table>
+      <button type="button" class="btn small" id="add-extra">+ Añadir evento</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COLUMNA 2: datos extendidos ===================== -->
+<section class="card">
+  <h2>2 · Datos extendidos DC-09</h2>
+  <label class="inline-check"><input type="checkbox" id="auto_xdata" checked> Completar automáticamente (nombre de zona → <code>I</code>, sala → <code>R</code>, datos fijos del panel)</label>
+  <div class="xgrid">
+  {% for k, f in xfields.items() %}
+    <label title="{{ f.description }}"><span><code>[{{ k }}]</code> {{ f.name }}</span>
+      <span class="xin"><input class="xd" data-k="{{ k }}" maxlength="{{ f.max_len }}" placeholder="{{ f.placeholder }}">
+      {% if k == 'H' %}<button type="button" class="btn small" id="h-now">ahora</button>{% endif %}
+      {% if k == 'V' %}<a class="btn small" id="v-open" target="_blank" title="Abrir URL">↗</a>{% endif %}</span></label>
+  {% endfor %}
+  </div>
+  <h2>3 · Opciones de transmisión</h2>
+  <div class="row2">
+    <label>Cifrado AES
+      <select id="encryption"><option value="default">Según panel / destino</option><option value="on">Forzar cifrado</option><option value="off">Forzar en claro</option><option value="wrong_key">Clave errónea (prueba NAK)</option></select></label>
+    <label>Nº de secuencia <input id="sequence" type="number" min="1" max="9999" placeholder="automático"></label>
+  </div>
+  <div class="row2">
+    <label class="inline-check"><input type="checkbox" id="timestamp" checked> Marca de tiempo <code>_HH:MM:SS,MM-DD-YYYY</code></label>
+    <label>Desfase de hora (s) <input id="timestamp_offset" type="number" value="0"></label>
+  </div>
+  <label class="inline-check"><input type="checkbox" id="account_in_data" checked> Repetir <code>#abonado|</code> dentro del bloque de datos</label>
+  <details><summary>Pruebas de robustez</summary>
+    <label class="inline-check"><input type="checkbox" id="corrupt_crc"> CRC incorrecto</label>
+    <label class="inline-check"><input type="checkbox" id="corrupt_length"> Longitud incorrecta</label>
+  </details>
+  <div class="row2">
+    <label>Repeticiones <input id="count" type="number" min="1" value="1"></label>
+    <label>Intervalo (s) <input id="interval" type="number" min="0" step="0.1" value="1"></label>
+  </div>
+</section>
+
+<!-- ===================== COLUMNA 3: vista previa y envío ===================== -->
+<section class="card sticky">
+  <h2>4 · Vista previa</h2>
+  <div id="summary" class="summary"></div>
+  <div class="small muted">Contenido en claro</div><pre id="pv-plain" class="frame"></pre>
+  <div class="small muted">Trama transmitida <span id="pv-meta"></span></div><pre id="pv-frame" class="frame"></pre>
+  <details><summary class="small">Hexadecimal</summary><pre id="pv-hex" class="frame small"></pre></details>
+  <div id="pv-error" class="flash danger" hidden></div>
+  <div class="send-row">
+    <button class="btn primary big" id="send">📤 Enviar</button>
+    <button class="btn" id="save-tpl" title="Guardar como plantilla">💾</button>
+    <select id="tpl"><option value="">Plantillas…</option></select>
+  </div>
+  <div id="result"></div>
+  <h3>Acciones rápidas</h3>
+  <div class="quick" id="quick-global"></div>
+  <h3>Zonas del panel</h3>
+  <div class="quick zones" id="quick-zones"></div>
+  <h3>Últimos envíos</h3>
+  <table class="tbl compact" id="recent"><tbody></tbody></table>
+</section>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+window.SIA = {{ sia|tojson }};
+window.CID = {{ cid|tojson }};
+</script><script src="/static/generator.js?v={{ version }}"></script>{% endblock %}

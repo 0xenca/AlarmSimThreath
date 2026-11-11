@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Escenarios{% endblock %}
+{% block content %}
+<h1>Escenarios</h1>
+<div class="grid2">
+<section class="card"><h2>Escenarios guardados</h2>
+<table class="tbl compact">
+{% for x in items %}<tr><td><a href="?edit={{ x.id }}"><b>{{ x.name }}</b></a><br><small class="muted">{{ x.steps|length }} pasos · {{ 'infinito' if x.repeat == 0 else (x.repeat ~ ' vez/veces') }} · panel {{ x.panel.account if x.panel else '—' }}</small></td>
+<td><button class="btn small primary" onclick="AH.runScenario({{ x.id }})">▶ Ejecutar</button></td></tr>
+{% else %}<tr><td class="muted">Sin escenarios</td></tr>{% endfor %}
+</table>
+<h2>Ejecuciones</h2>
+<div id="jobs"></div>
+<pre id="job-log" class="frame log"></pre>
+</section>
+<form method="post" class="card"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ sc.id if sc else '' }}">
+  <h2>{{ 'Editar: ' ~ sc.name if sc else 'Nuevo escenario' }}</h2>
+  <div class="grid-form">
+  <label>Nombre<input name="name" required value="{{ sc.name if sc else '' }}"></label>
+  <label>Panel<select name="panel_id">{% for p in panels %}<option value="{{ p.id }}" {{ 'selected' if sc and sc.panel_id == p.id }}>{{ p.label }}</option>{% endfor %}</select></label>
+  <label>Repeticiones (0 = infinito)<input name="repeat" type="number" min="0" value="{{ sc.repeat if sc else 1 }}"></label>
+  <label>Pausa entre repeticiones (s)<input name="repeat_delay" type="number" step="0.1" min="0" value="{{ sc.repeat_delay if sc else 0 }}"></label>
+  <label class="full">Descripción<input name="description" value="{{ sc.description if sc else '' }}"></label>
+  </div>
+  <label>Pasos (JSON)</label>
+  <textarea name="steps" rows="22" class="mono" spellcheck="false">{{ steps_json }}</textarea>
+  <details class="small"><summary>Formato de los pasos</summary>
+  <ul>
+    <li><code>{"type":"event","spec":{…}}</code> – alarma; <code>spec</code> admite lo mismo que el generador: <code>token, code, qualifier, zone, partition, user, extra_events, time_ti, inline_text, xdata{I,V,X,Y…}, options{encryption,timestamp,timestamp_offset,…}</code>. Opcional <code>"panel_id"</code> y <code>"stop_on_fail": true</code>.</li>
+    <li><code>{"type":"wait","seconds":5}</code> – pausa (con <code>"random_to":20</code> la pausa es aleatoria entre 5 y 20 s).</li>
+    <li><code>{"type":"null"}</code> – prueba de enlace.</li>
+  </ul>
+  <p>En el generador, el botón 💾 guarda una plantilla y la consola del navegador muestra el <code>spec</code> de la alarma actual (<code>AH.currentSpec()</code>).</p></details>
+  <button class="btn primary">Guardar</button>{% if sc %} <a href="/scenarios">Nuevo</a> <button class="btn danger" name="delete" value="1" onclick="return confirm('¿Eliminar?')">Eliminar</button>{% endif %}
+</form>
+</div>
+{% endblock %}
+{% block scripts %}<script>AH.initJobs({{ jobs|tojson }});</script>{% endblock %}

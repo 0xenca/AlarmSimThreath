@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Receptor de pruebas{% endblock %}
+{% block content %}
+<h1>Receptor de pruebas integrado</h1>
+<p>{% if status.listening %}Escuchando en <b>{{ status.listening }}</b>. Apunte una receptora destino a este puerto para validar los mensajes generados.{% else %}<span class="flash warning">Desactivado (TEST_RECEIVER_PORT=0 en alarmsim.env).</span>{% endif %}</p>
+<div class="grid2">
+<form method="post" class="card"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Respuesta<select name="mode">{% for k, v in [('ack','ACK (normal)'),('nak','NAK (rechazar)'),('duh','DUH (no entendido)'),('silent','Sin respuesta (timeout)')] %}<option value="{{ k }}" {{ 'selected' if mode == k }}>{{ v }}</option>{% endfor %}</select></label>
+  <label>Claves AES adicionales (una por línea: <code>ABONADO=clave_hex</code>). Por defecto usa las de los paneles y receptoras.
+  <textarea name="keys" rows="3" class="mono">{% for k, v in keys.items() %}{{ k }}={{ v }}
+{% endfor %}</textarea></label>
+  <button class="btn primary">Guardar</button> <button class="btn danger" name="clear" value="1">Vaciar lista</button>
+</form>
+<section class="card"><p class="muted small">La lista se actualiza en tiempo real.</p></section>
+</div>
+<section class="card"><table class="tbl compact" id="rx"><thead><tr><th>#</th><th>Hora</th><th>Origen</th><th>Abonado</th><th>Tipo</th><th>Seq</th><th>Eventos</th><th>Datos extendidos</th><th>Resp.</th></tr></thead><tbody>
+{% for m in items %}{% set d = m.decoded or {} %}<tr><td>{{ m.id }}</td><td class="nowrap">{{ m.created_at.strftime('%H:%M:%S') }}</td><td class="small">{{ m.transport }} {{ m.remote }}</td><td>{{ d.account }}</td><td>{{ d.token }} {{ '🔒' if d.encrypted }}</td><td>{{ d.sequence }}{% if d.clock_skew_s and (d.clock_skew_s > 20 or d.clock_skew_s < -20) %}<br><small class="danger-text">hora {{ d.clock_skew_s }} s</small>{% endif %}</td>
+<td class="small">{{ (d.events or [])|join('; ') }}{% if m.error %}<span class="danger-text">{{ m.error }}</span>{% endif %}</td>
+<td class="small">{% for k, v in (d.xdata or {}).items() %}<code>[{{ k }}]</code> {{ v }}<br>{% endfor %}</td><td>{{ m.response }}</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}
+{% block scripts %}<script>
+AH.onLive(m => { if (m.type !== 'received') return; const r = m.message, d = r.decoded || {};
+  const tr = document.createElement('tr'); const x = Object.entries(d.xdata || {}).map(([k, v]) => `<code>[${k}]</code> ${AH.esc(v)}`).join('<br>');
+  tr.innerHTML = `<td>${r.id}</td><td>${new Date(r.created_at).toLocaleTimeString()}</td><td class="small">${r.transport} ${r.remote}</td><td>${d.account || ''}</td><td>${d.token || ''} ${d.encrypted ? '🔒' : ''}</td><td>${d.sequence || ''}</td><td class="small">${AH.esc((d.events || []).join('; '))}<span class="danger-text">${AH.esc(r.error || '')}</span></td><td class="small">${x}</td><td>${r.response}</td>`;
+  document.querySelector('#rx tbody').prepend(tr); });
+</script>{% endblock %}

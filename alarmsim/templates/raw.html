@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Trama manual{% endblock %}
+{% block content %}
+<h1>Trama manual</h1>
+<p class="muted">Escriba el cuerpo del mensaje desde la primera comilla. Con «calcular CRC y longitud» se añaden <code>&lt;LF&gt;CRC 0LLL … &lt;CR&gt;</code> automáticamente.</p>
+<form class="card" id="raw-form">
+  <label>Receptora<select name="target_id">{% for t in targets %}<option value="{{ t.id }}">{{ t.label }}</option>{% endfor %}</select></label>
+  <label>Cuerpo<textarea name="body" rows="4" class="mono">"SIA-DCS"0001R0L0#1234[#1234|Nri1/BA3][IPrueba manual][Vhttps://example.com/v/1]</textarea></label>
+  <label>Clave AES para descifrar la respuesta (opcional)<input name="key" class="mono"></label>
+  <label class="inline-check"><input type="checkbox" name="fix_crc" checked> Calcular CRC y longitud</label>
+  <button class="btn primary">📤 Enviar</button>
+</form>
+<div id="result"></div>
+{% endblock %}
+{% block scripts %}<script>
+document.getElementById('raw-form').onsubmit = async (e) => { e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target)); fd.fix_crc = !!fd.fix_crc;
+  try { AH.renderResult(document.getElementById('result'), await AH.post('/api/raw', fd)); } catch (err) { AH.toast(err.message, 'danger'); } };
+</script>{% endblock %}

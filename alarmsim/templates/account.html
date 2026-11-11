@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Mi cuenta</h1>
+{% if user and user.must_change_password %}<div class="flash warning">Debe cambiar la contraseña por defecto.</div>{% endif %}
+<form method="post" class="card grid-form"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Contraseña actual<input type="password" name="current_password"></label>
+  <label>Nueva contraseña (mín. 8)<input type="password" name="new_password"></label>
+  <label>Repetir<input type="password" name="new_password2"></label>
+  <div class="full"><button class="btn primary">Cambiar contraseña</button></div>
+</form>
+<form method="post" class="card"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <h2>API key</h2>
+  {% if user and user.api_key %}<p><code>{{ user.api_key }}</code></p>{% endif %}
+  <p class="muted small">Uso: cabecera <code>X-API-Key</code> en <code>/api/*</code> (ver <a href="/api/docs">/api/docs</a>).</p>
+  <button class="btn" name="api_key" value="new">Generar nueva</button>
+  {% if user and user.api_key %}<button class="btn danger" name="api_key" value="revoke">Revocar</button>{% endif %}
+</form>
+{% endblock %}

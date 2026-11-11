@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Prueba de carga{% endblock %}
+{% block content %}
+<h1>Prueba de carga</h1>
+<p class="muted">Simula muchos paneles enviando a la vez (SIA-DCS con códigos aleatorios). Los envíos no se guardan uno a uno en el histórico.</p>
+<div class="grid2">
+<form class="card grid-form" id="load-form">
+  <label>Receptora<select name="target_id">{% for t in targets %}<option value="{{ t.id }}">{{ t.label }}</option>{% endfor %}</select></label>
+  <label>Primer abonado (hex)<input name="account_start" value="9000"></label>
+  <label>Nº de paneles<input name="panels" type="number" min="1" value="20"></label>
+  <label>Mensajes por panel<input name="messages" type="number" min="1" value="10"></label>
+  <label>Concurrencia máxima<input name="concurrency" type="number" min="1" value="50"></label>
+  <label>Pausa entre mensajes de un panel (s)<input name="interval" type="number" step="0.01" min="0" value="0"></label>
+  <label class="full">Códigos SIA aleatorios<input name="codes" value="BA,BR,OP,CL,RP,TA,TR,AT,AR,FA,FR"></label>
+  <label class="inline-check"><input type="checkbox" name="encrypt" checked> Cifrar si la receptora tiene clave</label>
+  <div class="full"><button class="btn primary">▶ Lanzar</button></div>
+</form>
+<section class="card"><h2>Ejecuciones</h2><div id="jobs"></div><pre id="job-log" class="frame log"></pre></section>
+</div>
+{% endblock %}
+{% block scripts %}<script>AH.initJobs({{ jobs|tojson }});
+document.getElementById('load-form').onsubmit = async (e) => { e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target)); fd.encrypt = !!fd.encrypt;
+  try { const j = await AH.post('/api/load', fd); AH.toast('Prueba lanzada: ' + j.id); } catch (err) { AH.toast(err.message, 'danger'); } };
+</script>{% endblock %}
